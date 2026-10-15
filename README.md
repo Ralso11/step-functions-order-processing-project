@@ -28,33 +28,19 @@ dedicated failure-handling path when something goes wrong.
 
 ## Architecture
 
-```
-Manual test (or EventBridge, disabled by default)
-        |
-        v
-AWS Step Functions state machine
-        |
-        +--> Validate order Lambda
-        |
-        +--> Check inventory Lambda
-        |
-        +--> Process payment Lambda
-        |
-        +--> Save order Lambda
-        |
-        +--> Success state
-```
-
-If any step fails:
-
-```
-Step Functions retry (for transient errors)
-        |
-        v
-Failure handler Lambda
-        |
-        v
-Failed state
+```mermaid
+flowchart TB
+    T["Manual test input<br/>(EventBridge trigger disabled by default)"] --> SM["Step Functions state machine"]
+    SM --> V["Validate order"]
+    V --> I["Check inventory"]
+    I --> P["Process payment"]
+    P --> S["Save order<br/>(DynamoDB)"]
+    S --> OK(["Order succeeded"])
+    V -.->|"retry, then catch"| F
+    I -.->|"retry, then catch"| F
+    P -.->|"retry, then catch"| F
+    S -.->|"retry, then catch"| F
+    F["Handle failure"] --> NO(["Order failed"])
 ```
 
 ## AWS services used
